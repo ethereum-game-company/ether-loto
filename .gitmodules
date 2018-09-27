@@ -1,0 +1,3 @@
+[submodule "ether-loto-contract"]
+	path = ether-loto-contract
+	url = https://github.com/nGoline/ether-loto-contract.git

@@ -1,0 +1,48 @@
+{
+  "name": "ether-loto",
+  "version": "0.0.1",
+  "description": "Ethereum based lotery DApp",
+  "main": "web/app.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "start": "gulp",
+    "start-truffle": "concurrently \"cd ether-loto-contract && truffle dev\" \"cd ether-loto-contract && truffle migrate --reset && cd .. && gulp\"",
+    "start-geth": "concurrently \"geth --dev --rpc --targetgaslimit 9000000000\" \"cd ether-loto-contract && truffle migrate --reset --network devGeth && cd .. &&  gulp\"",
+    "start-ganache": "cd ether-loto-contract && truffle migrate --reset --network devGanache && cd .. && gulp",
+    "deploy": "gulp deploy",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "bower install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ethereum-game-company/ether-loto.git"
+  },
+  "author": "Níckolas Goline",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ethereum-game-company/ether-loto/issues"
+  },
+  "homepage": "https://github.com/ethereum-game-company/ether-loto#readme",
+  "devDependencies": {
+    "browser-sync": "^2.24.7",
+    "concurrently": "^4.0.1",
+    "gulp": "^4.0.0",
+    "gulp-clean-css": "^3.10.0",
+    "gulp-concat": "^2.6.1",
+    "gulp-csso": "^3.0.1",
+    "gulp-importify": "0.0.7",
+    "gulp-minify": "^3.1.0",
+    "gulp-purifycss": "^0.2.0",
+    "gulp-rename": "^1.4.0",
+    "gulp-sass": "^4.0.1",
+    "gulp-scss": "^1.4.0",
+    "gulp-solidity-abi": "0.0.1",
+    "gulp-sourcemaps": "^2.6.4",
+    "gulp-uglify": "^3.0.1",
+    "gulp-watch": "^5.0.1",
+    "write": "^1.0.3"
+  },
+  "dependencies": {}
+}
