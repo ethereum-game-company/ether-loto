@@ -8,6 +8,11 @@ const rename = require('gulp-rename');
 const browserSync = require('browser-sync').create();
 const minify = require('gulp-minify');
 
+gulp.task('copy-address', function () {
+  return gulp.src('ether-loto-contract/build/1_contract_address.js')
+    .pipe(gulp.dest('src/js'));
+});
+
 gulp.task('html', function () {
   return gulp.src('src/index.html')
     .pipe(gulp.dest('build'));
@@ -36,7 +41,7 @@ gulp.task('js-deploy', function () {
   return gulp.src(['bower_components/jquery/dist/jquery.slim.min.js',
       'bower_components/web3/dist/web3.min.js',
       'bower_components/utf8/utf8.js',
-      'build/contracts/EtherLoto.json',
+      'ether-loto-contract/build/contracts/EtherLoto.json',
       'src/js/*.js'
     ])
     .pipe(solidityABI())
@@ -64,10 +69,21 @@ gulp.task('css', function () {
 
 gulp.task('dev', gulp.parallel('html', 'js-dev', 'css'));
 
+gulp.task('dev-contract', gulp.series('copy-address', 'dev'));
+
 gulp.task('deploy', gulp.parallel('html', 'js-deploy', 'css'));
 
 // Static Server + watching scss/html files
 gulp.task('serve', gulp.series('dev', function () {
+  browserSync.init({
+    server: "./build"
+  });
+
+  gulp.watch(['src/**/*', '!src/js/2_abi.js', 'build/contracts/EtherLoto.json'], gulp.series('dev')).on('change', browserSync.reload);
+}));
+
+// Static Server + watching scss/html files
+gulp.task('serve-full', gulp.series('dev-contract', function () {
   browserSync.init({
     server: "./build"
   });

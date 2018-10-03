@@ -3,33 +3,41 @@
  */
 var injectedWeb3 = -1;
 
+function getInfuraWeb3() {
+  return new Web3(new Web3.providers.HttpProvider('https://ropsten.infura.io/v3/f2ad84c46afc46dbbcff77c065730668'));
+}
+
 // Modern dapp browsers...
 if (window.ethereum) {
   window.web3 = new Web3(ethereum);
   injectedWeb3 = 1;
-  console.log("injected modern web3");
+  console.log('injected modern web3');
 }
 // Legacy dapp browsers...
 else if (window.web3) {
   web3 = new Web3(web3.currentProvider);
   var injectedWeb3 = 0;
-  console.log("injected legacy web3");
+  console.log('injected legacy web3');
 }
 // Non-dapp browsers...
 else {
-  web3 = new Web3(new Web3.providers.HttpProvider("https://mainnet.infura.io/v3/f2ad84c46afc46dbbcff77c065730668"));
-  console.log("read only");
+  web3 = getInfuraWeb3();
+  console.log('read only');
 }
 
 var expiration,
   selection = [],
+  drawResult = {
+    result: '',
+    final: false
+  },
   betSize = 6,
   betValue = 2e16,
   loading = 0,
   loadingTotal = 5,
-  progressBar = $('.progress-bar');
+  progressBar = document.getElementsByClassName('progress-bar')[0];
 
-$('#span-contract-address').text(contractAddress.substring(2));
+document.getElementById('span-contract-address').innerText = contractAddress.substring(2);
 
 var etherLotoContract = web3.eth.contract(EtherLoto.abi);
 var contractInstance = etherLotoContract.at(contractAddress);
@@ -54,18 +62,20 @@ function expirationCB(error, _expiration) {
   if (error) {
     console.error(error);
   } else {
-    expiration = new Date(_expiration * 1000);
+    let smallIsActive = document.getElementById('small-is-active');
+    expiration = new Date(_expiration.toNumber() * 1000);
     var date_str = expiration.getDate().toString().padStart(2, '0') +
       '/' + (expiration.getMonth() + 1).toString().padStart(2, '0') +
       '/' + expiration.getFullYear().toString().padStart(2, '0') +
       ' ' + expiration.getHours().toString().padStart(2, '0') +
       ':' + expiration.getMinutes().toString().padStart(2, '0');
-    $('#span-bets-end').text(date_str);
+    document.getElementById('span-bets-end').innerText = date_str;
 
     if (expiration > new Date()) {
-      $('#small-is-active').html('not final');
+      smallIsActive.innerText = 'not final';
     } else {
-      $('#small-is-active').html('final');
+      smallIsActive.innerText = 'final';
+      drawResult.final = true;
       enableWithdraw();
     }
   }
@@ -77,9 +87,9 @@ function betSizeCB(error, _betSize) {
   } else {
     betSize = _betSize;
 
-    var selection = $('.selection');
+    var selection = document.getElementsByClassName('selection')[0];
     for (var i = 0; i < betSize; i++) {
-      selection.append('<b class="ball">?</b>');
+      selection.innerHTML += `<b class='ball'>?</b>`;
     }
 
     incrementProgress();
@@ -90,7 +100,18 @@ function getResultCB(error, result) {
   if (error) {
     console.error(error);
   } else {
-    convertResult(result);
+    drawResult.result = result;
+
+    var bet = document.getElementsByClassName('bet')[0];
+    bet.innerHTML = '';
+
+    var result = convertResult(result);
+
+    for (var i in result) {
+      bet.innerHTML += `<b class='ball'>${result[i]}</b>`;
+    }
+
+    incrementProgress();
   }
 }
 
@@ -130,7 +151,7 @@ function maxNumberCB(error, maxNumber) {
 var betReceivedEvent = contractInstance.BetReceived((error, result) => {
   if (!error) {
     setSpanPot(result.args._prizeAvailable.toNumber());
-    convertResult(result.args._result);
+    getResultCB(null, result.args._result);
   }
 });
 
@@ -141,15 +162,15 @@ function incrementProgress() {
   loading++;
 
   var progress = parseInt(loading / loadingTotal * 100);
-  progressBar.attr('aria-valuenow', progress);
+  progressBar.setAttribute('aria-valuenow', progress);
   var progressText = `${progress}%`;
-  progressBar.html(progressText);
-  progressBar.css('width', progressText);
+  progressBar.innerHTML = progressText;
+  progressBar.style.width = progressText;
 
   if (loading === loadingTotal) {
     setTimeout(_ => {
-      $('main').show();
-      $('header').hide();
+      document.getElementsByTagName('main')[0].style.display = 'block';
+      document.getElementsByTagName('header')[0].style.display = 'none';
     }, 500);
   }
 }
@@ -158,13 +179,13 @@ function resetView() {
   document.body.scrollTop = 0;
   document.documentElement.scrollTop = 0;
 
-  $('.cell').each((i, j) => {
-    j = $(j);
-    if (j.data('selected') !== undefined) {
-      j.data('select', false);
-      j.removeClass('selected');
+  let cells = document.getElementsByClassName('cell');
+  for (let i = 0; i < cells.length; i++) {
+    if (cells[i].hasAttribute('data-selected')) {
+      cells[i].setAttribute('data-selected', false);
+      cells[i].className = 'cell';
     }
-  })
+  }
 
   selection = [];
   setButtonState();
@@ -172,8 +193,8 @@ function resetView() {
 }
 
 function convertResult(result) {
-  var bet = $('.bet');
-  bet.text('');
+  var numbers = [];
+
   for (var i = 0; i <= betSize; i++) {
     var start = i * 2;
     var int = result.substring(start, start + 2);
@@ -182,24 +203,25 @@ function convertResult(result) {
     } else if (int == '0x') {
       continue
     } else {
-      bet.append(`<b class="ball">${parseInt(int, 16)}</b>`);
+      numbers.push(parseInt(int, 16));
     }
   }
 
-  incrementProgress();
+  return numbers;
 }
 
 function populateBoard(maxNumber) {
   var square = Math.ceil(Math.sqrt(maxNumber));
   var number = 0;
-  var numbers = $('.board');
+  var numbers = document.getElementsByClassName('board')[0];
   for (var i = 0; i < square; i++) {
-    numbers.append(`<div class="row row${i}"></div>`);
+    numbers.innerHTML += `<div class='row row${i}'></div>`;
     for (var j = 0; j < square; j++) {
+      let row = document.getElementsByClassName(`row row${i}`)[0];
       if (number < maxNumber) {
-        $(`.row.row${i}`).append(`<div class="cell" data-number="${number}" data-selected="false">${number}</div>`);
+        row.innerHTML += `<div class='cell' data-number='${number}' data-selected='false'>${number}</div>`;
       } else {
-        $(`.row.row${i}`).append(`<div class="cell">&nbsp;</div>`);
+        row.innerHTML += `<div class='cell'>&nbsp;</div>`;
       }
 
       number++;
@@ -208,24 +230,25 @@ function populateBoard(maxNumber) {
 };
 
 function setBalls() {
-  var balls = $('b.ball', '.selection');
+  let balls = document.getElementsByClassName('selection')[0].children;
   for (var i = 0; i < balls.length; i++) {
-    $(balls[i]).text(selection[i] === undefined ? '?' : selection[i]);
+    balls[i].innerText = selection[i] === undefined ? '?' : selection[i];
   }
 };
 
 function setSpanPot(prizeAvailable) {
   prizeAvailable = parseInt(prizeAvailable) / 1e18 || 0;
-  $('#span-pot').text('Ξ ' + prizeAvailable);
+  document.getElementById('span-pot').innerText = 'Ξ ' + prizeAvailable;
 
   incrementProgress();
 };
 
 function setButtonState() {
+  let buttonBet = document.getElementById('button-bet');
   if (expiration > new Date() && selection.length == betSize) {
-    $('#button-bet').prop('disabled', false);
+    buttonBet.disabled = false;
   } else {
-    $('#button-bet').prop('disabled', true);
+    buttonBet.disabled = true;
   }
 };
 
@@ -234,9 +257,10 @@ function sortNumber(a, b) {
 };
 
 function enableWithdraw() {
-  $('.card', '#withdraw-panel').attr('title', '');
-  $('#text-secret', '#withdraw-panel').prop('disabled', '');
-  $('#button-withdraw', '#withdraw-panel').prop('disabled', '');
+  let withdrawPanel = document.getElementById('withdraw-panel');
+  withdrawPanel.querySelector('.card').title = '';
+  withdrawPanel.querySelector('#text-secret').disabled = false;
+  withdrawPanel.querySelector('#button-withdraw').disabled = false;
 
   incrementProgress();
 };
@@ -256,20 +280,97 @@ function toggleLoadingButton(buttonName) {
   }
 }
 
+function getMyBetsToCurrentContract() {
+  var loading = document.getElementById('div-my-bets-loading');
+  loading.style.display = 'block';
+
+  var betReceivedEvent = EtherLoto.abi.find((element) => {
+    if (element.name === 'BetReceived') {
+      return element;
+    }
+  });
+  topicFilter = web3.sha3(`${betReceivedEvent.name}(${betReceivedEvent.inputs.map((el)=>{return el.type}).join(',')})`)
+
+  filter = web3.eth.filter({
+    fromBlock: createdAtBlock,
+    to: contractAddress,
+    from: web3.eth.defaultAccount,
+    topics: [topicFilter]
+  });
+
+  filter.get(function (err, log) {
+    if (err) {
+      console.error(err);
+    }
+
+    if (log && log.length) {
+      var hasWinningBet = false;
+      var betsFooter = document.getElementById('p-my-bets-footer');
+      var bets = document.getElementsByClassName('bets')[0];
+      bets.innerHTML = '';
+
+      for (var i = 0; i < log.length; i++) {
+        var winnerClass = '';
+        var isWinningBet = drawResult.result == log[i].topics[1];
+        hasWinningBet = hasWinningBet || isWinningBet;
+        var bet = document.createElement('span')
+        var betNumbers = convertResult(log[i].topics[1]);
+
+        if (isWinningBet) {
+          if (drawResult.final) {
+            winnerClass = 'winner';
+          } else {
+            winnerClass = 'almost-winner';
+          }
+        }
+
+        for (var j = 0; j < betNumbers.length; j++) {
+          bet.innerHTML += `<b class='ball ${winnerClass}'>${betNumbers[j]}</b>`;
+        }
+
+        bets.appendChild(bet);
+      }
+
+      if (drawResult.final) {
+        if (hasWinningBet) {
+          betsFooter.innerHTML = '';
+          document.getElementById('button-withdraw-now').style.display = 'inline-block';
+        } else {
+          betsFooter.innerHTML = 'Sadly you didn\'t won this time.</br>See you at the next draw!';
+        }
+      } else if (hasWinningBet) {
+        betsFooter.innerHTML = 'If the lottery had ended by now, you\'d be the winner!</br>Keep betting to increase your chances!';
+      } else {
+        betsFooter.innerHTML = 'The lottery is still running.</br>Keep betting to increase your chances!';
+      }
+    } else {
+      bets.innerHTML = '<p>You haven\'t made any bet to this draw.<br/>You should start now!<p>';
+    }
+
+    loading.style.display = 'none';
+  });
+  filter.stopWatching();
+}
+
 function setEvents() {
   $('.nav-link').on('click', e => {
-    var active = $('.nav-link.active').get(0).hash;
-    if (e.target.hash === active) {
+    var activeLink = $('.nav-link.active').get(0);
+    if (e.target.hash === activeLink.hash) {
       return;
     } else if (e.target.hash === '#Bet') {
-      $('#withdraw-panel').hide();
+      $('.panel').hide();
       $('#bet-panel').show();
+    } else if (e.target.hash === '#MyBets') {
+      $('.panel').hide();
+      getMyBetsToCurrentContract();
+      $('#my-bets-panel').show();
     } else {
-      $('#bet-panel').hide();
+      $('.panel').hide();
       $('#withdraw-panel').show();
     }
 
-    $('.nav-link').toggleClass('active');
+    $(activeLink).removeClass('active');
+    $(e.target).addClass('active');
   });
 
   $('.cell').on('click', e => {
@@ -312,23 +413,25 @@ function setEvents() {
     }
 
     var secret = $('#text-secret', '#bet-panel').val();
-    var bet = "0x";
+    var bet = '0x';
 
     for (var i = 0; i < 25; i++) {
       if (i < betSize) {
         bet += selection[i].toString(16).padStart(2, '0');
       } else {
-        bet += "00";
+        bet += '00';
       }
     }
 
     try {
       // Request account access if needed
-      if (injectedWeb3 > 0)
+      if (injectedWeb3 > 0) {
         await ethereum.enable();
+      }
+
       // Acccounts now exposed
       contractInstance.bet(bet, soliditySha3(secret), {
-        from: web3.eth.accounts[0],
+        from: web3.eth.defaultAccount,
         value: betValue,
         gas: 150000
       }, (error, result) => {
@@ -359,11 +462,13 @@ function setEvents() {
 
     try {
       // Request account access if needed
-      if (injectedWeb3 > 0)
+      if (injectedWeb3 > 0) {
         await ethereum.enable();
+      }
+
       // Acccounts now exposed
       contractInstance.withdraw(secret, {
-        from: web3.eth.accounts[0],
+        from: web3.eth.defaultAccount,
         gas: 210000
       }, (error, result) => {
         if (error) {

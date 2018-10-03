@@ -40,6 +40,7 @@ body {
 }
 
 .bet,
+.bets span,
 .selection {
   border-spacing: 0.25rem;
 }
@@ -54,6 +55,14 @@ b.ball {
   text-align: center;
   height: 2.5rem;
   width: 2.5rem;
+}
+
+b.ball.winner {
+  background-color: #81c181;
+}
+
+b.ball.almost-winner {
+  background-color: #d0bf49;
 }
 
 .list-group-item span,

@@ -8,9 +8,9 @@
   },
   "scripts": {
     "start": "gulp",
-    "start-truffle": "concurrently \"cd ether-loto-contract && truffle dev\" \"cd ether-loto-contract && truffle migrate --reset && cd .. && gulp\"",
-    "start-geth": "concurrently \"geth --dev --rpc --targetgaslimit 9000000000\" \"cd ether-loto-contract && truffle migrate --reset --network devGeth && cd .. &&  gulp\"",
-    "start-ganache": "cd ether-loto-contract && truffle migrate --reset --network devGanache && cd .. && gulp",
+    "start-truffle": "concurrently \"cd ether-loto-contract && truffle dev\" \"cd ether-loto-contract && truffle migrate --reset && cd .. && gulp serve-full\"",
+    "start-geth": "concurrently \"geth --dev --rpc --targetgaslimit 9000000000\" \"cd ether-loto-contract && truffle migrate --reset --network devGeth && cd .. &&  gulp serve-full\"",
+    "start-ganache": "cd ether-loto-contract && truffle migrate --reset --network devGanache && cd .. && gulp serve-full",
     "deploy": "gulp deploy",
     "test": "echo \"Error: no test specified\" && exit 1",
     "postinstall": "bower install"

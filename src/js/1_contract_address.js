@@ -1,1 +1,2 @@
-var contractAddress = '0x425be0620d43d51d78034e35640b2276db77d23b';
+var contractAddress = '0xC4d279D7AE338e64690d14C54D3657fde60A1e0B';
+var createdAtBlock = 4160011;
